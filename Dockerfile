@@ -31,23 +31,19 @@ RUN wget https://download3.rstudio.org/ubuntu-18.04/x86_64/shiny-server-1.5.21.1
     gdebi -n shiny-server-1.5.21.1012-amd64.deb && \
     rm shiny-server-1.5.21.1012-amd64.deb
 
-# Instalar paquetes R (esto tarda varios minutos)
+# Instalar paquetes R
 RUN R -e "install.packages(c('shiny', 'duckdb', 'DBI', 'ggplot2', 'dplyr', 'DT'), repos='https://cran.rstudio.com/', dependencies=TRUE)"
 
 # Crear directorios
-RUN mkdir -p /srv/shiny-server/data
+RUN mkdir -p /srv/shiny-server/data /srv/shiny-server/R
 
 # Copiar aplicación
 COPY app.R /srv/shiny-server/app.R
 
-# Copiar carpeta R si existe
-RUN mkdir -p /srv/shiny-server/R
-COPY R/ /srv/shiny-server/R/ 2>/dev/null || true
-
 # Permisos
 RUN chmod -R 755 /srv/shiny-server
 
-# Configurar Shiny Server para servir desde /srv/shiny-server
+# Configurar Shiny Server
 RUN echo 'run_as shiny;' > /etc/shiny-server/shiny-server.conf && \
     echo 'server {' >> /etc/shiny-server/shiny-server.conf && \
     echo '  listen 3838;' >> /etc/shiny-server/shiny-server.conf && \
