@@ -1,37 +1,33 @@
-FROM ubuntu:22.04
+# Usar imagen base de R con Shiny
+FROM rocker/shiny:latest
 
-ENV DEBIAN_FRONTEND=noninteractive
-
-# Instalar dependencias mínimas
+# Instalar dependencias del sistema si las necesitas
 RUN apt-get update && apt-get install -y \
-    r-base \
-    r-base-dev \
-    libcurl4-gnutls-dev \
+    libcurl4-openssl-dev \
     libssl-dev \
     libxml2-dev \
-    wget \
+    libmariadb-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Instalar solo paquetes esenciales (sin Cairo)
-RUN R -e "options(repos = c(CRAN = 'https://cran.rstudio.com/')); install.packages('shiny', dependencies = FALSE)"
-RUN R -e "options(repos = c(CRAN = 'https://cran.rstudio.com/')); install.packages('duckdb')"
-RUN R -e "options(repos = c(CRAN = 'https://cran.rstudio.com/')); install.packages('DBI')"
-RUN R -e "options(repos = c(CRAN = 'https://cran.rstudio.com/')); install.packages('ggplot2')"
-RUN R -e "options(repos = c(CRAN = 'https://cran.rstudio.com/')); install.packages('dplyr')"
-RUN R -e "options(repos = c(CRAN = 'https://cran.rstudio.com/')); install.packages('DT')"
+# Crear directorio de trabajo
+WORKDIR /srv/shiny-server
 
-# Crear directorios
-RUN mkdir -p /srv/shiny-server
+# Copiar el archivo de dependencias (si usas renv)
+# COPY renv.lock .
 
-# Copiar aplicación
-COPY app.R /srv/shiny-server/app.R
+# Instalar paquetes R necesarios
+RUN R -e "install.packages(c('shiny', 'ggplot2', 'dplyr', 'DBI', 'RMySQL'), repos='https://cran.rstudio.com/')"
 
-# Permisos
-RUN chmod -R 755 /srv/shiny-server
+# Copiar la aplicación
+COPY app.R .
+# O si usas formato separado:
+# COPY ui.R server.R ./
 
-# Exponer puerto
+# Copiar archivos adicionales si los tienes
+# COPY data/ ./data/
+
+# Exponer el puerto
 EXPOSE 3838
 
-# Ejecutar app
-WORKDIR /srv/shiny-server
-CMD ["R", "-e", "shiny::runApp('/srv/shiny-server/app.R', host='0.0.0.0', port=3838)"]
+# Comando para ejecutar la aplicación
+CMD ["R", "-e", "shiny::runApp('/srv/shiny-server', host='0.0.0.0', port=3838)"]
